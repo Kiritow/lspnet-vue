@@ -10,7 +10,7 @@
       <el-col :span="6">
         <el-input v-model="networkName" placeholder="Network Name"/>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="18">
         <el-button type="primary" @click="loadNetworkTunnel">Check</el-button>
         <el-button type="primary" @click="isVisibleTokenPopup2 = true">Tunnel Token</el-button>
         <el-button type="primary" @click="isVisibleTokenPopup3 = true">New Host</el-button>
@@ -72,12 +72,12 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios';
-import TunnelTokenPopup from './TunnelTokenPopup.vue'
-import HostCreatePopup from './HostCreatePopup.vue';
-import TunnelCreatePopup from './TunnelCreatePopup.vue';
+import TunnelTokenPopup from '@/TunnelTokenPopup.vue'
+import HostCreatePopup from '@/HostCreatePopup.vue';
+import TunnelCreatePopup from '@/TunnelCreatePopup.vue';
 
 const username = ref('')
-const networkName = ref('testnet')
+const networkName = ref('')
 const networkData = ref(null)
 
 const isVisibleTokenPopup = ref(false)
@@ -89,14 +89,16 @@ const isVisibleTokenPopup4 = ref(false)
 
 
 async function loadNetworkTunnel() {
-  const res = await (await fetch('/admin/tunnel/list?' + encodeURI(`network=${networkName.value}`))).json()
-  console.log(res)
+  const res = (await axios.get('/admin/tunnel/list', {
+    params: {
+      network: networkName.value,
+    }
+  })).data
   networkData.value = res.data
 }
 
 async function loadUserInfo() {
-  const res = await (await fetch('/admin/user')).json()
-  console.log(res)
+  const res = (await axios.get('/admin/user')).data
   if (!res.data?.username) {
     return false
   }
@@ -105,8 +107,7 @@ async function loadUserInfo() {
 }
 
 async function popupCliToken() {
-  const res = await (await fetch('/admin/token', { method: 'POST' })).json()
-  console.log(res)
+  const res = (await axios.post('/admin/token')).data
   if (res.data?.token) {
     cliToken.value = res.data.token
   } else {
@@ -132,14 +133,12 @@ async function copyCliToken() {
 
 async function enableTunnel(id) {
   const res = (await axios.post('/admin/tunnel/enable', { id })).data
-  console.log(res)
   ElMessage({ message: res.message, type: 'info' })
   await loadNetworkTunnel()
 }
 
 async function disableTunnel(id) {
   const res = (await axios.post('/admin/tunnel/disable', { id })).data
-  console.log(res)
   ElMessage({ message: res.message, type: 'info' })
   await loadNetworkTunnel()
 }
@@ -148,6 +147,7 @@ onMounted(async ()=>{
   const isReady = await loadUserInfo()
   if(!isReady) {
     console.log(`user not logged in, redirect to login...`)
+    ElMessage({ message: 'logging in...', type: 'warning' })
     window.location.href = '/auth/login/github'
     return
   }
